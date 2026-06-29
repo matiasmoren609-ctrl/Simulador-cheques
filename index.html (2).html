@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simuladores de Cheques</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy: #1F3864;
+    --navy-light: #2a4a82;
+    --gold: #F2C12E;
+    --gold-light: #FFF2CC;
+    --white: #ffffff;
+    --gray-50: #f8f9fb;
+    --gray-100: #eef0f4;
+    --gray-300: #c8cdd8;
+    --gray-500: #6b7280;
+    --gray-700: #374151;
+    --green: #15803d;
+    --green-bg: #f0fdf4;
+    --red: #b91c1c;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--gray-50);
+    color: var(--gray-700);
+    min-height: 100vh;
+  }
+
+  /* Header */
+  .page-header {
+    background: var(--navy);
+    padding: 28px 40px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .page-header .logo {
+    width: 40px; height: 40px;
+    background: var(--gold);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .page-header h1 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--white);
+    letter-spacing: -0.02em;
+  }
+  .page-header p {
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.55);
+    margin-top: 2px;
+  }
+
+  /* Tabs */
+  .tabs-wrapper {
+    background: var(--navy);
+    padding: 0 40px;
+    border-bottom: 2px solid rgba(255,255,255,0.08);
+  }
+  .tabs {
+    display: flex;
+    gap: 4px;
+  }
+  .tab-btn {
+    padding: 14px 24px;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: rgba(255,255,255,0.5);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-bottom: -2px;
+    letter-spacing: 0.01em;
+  }
+  .tab-btn:hover { color: rgba(255,255,255,0.85); }
+  .tab-btn.active {
+    color: var(--gold);
+    border-bottom-color: var(--gold);
+  }
+
+  /* Content */
+  .content {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 36px 24px 60px;
+  }
+
+  .sim-panel { display: none; }
+  .sim-panel.active { display: block; }
+
+  /* Card */
+  .card {
+    background: var(--white);
+    border: 1px solid var(--gray-100);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 4px rgba(31,56,100,0.06);
+  }
+  .card-header {
+    background: var(--navy);
+    padding: 14px 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--white);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .card-body { padding: 20px; }
+
+  /* Fields */
+  .field {
+    display: grid;
+    grid-template-columns: 1fr 160px;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--gray-100);
+  }
+  .field:last-child { border-bottom: none; }
+  .field label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--navy);
+  }
+  .field input {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #0000cc;
+    background: var(--gold-light);
+    border: 1px solid var(--gray-300);
+    border-radius: 6px;
+    padding: 8px 12px;
+    text-align: right;
+    width: 100%;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .field input:focus {
+    outline: none;
+    border-color: var(--navy);
+    box-shadow: 0 0 0 3px rgba(31,56,100,0.1);
+  }
+
+  /* Toggle IVA */
+  .toggle-row {
+    display: grid;
+    grid-template-columns: 1fr 160px;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--gray-100);
+  }
+  .toggle-row:last-child { border-bottom: none; }
+  .toggle-row label { font-size: 0.875rem; font-weight: 500; color: var(--navy); }
+  .toggle-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .toggle-label { font-size: 0.8rem; color: var(--gray-500); }
+  .toggle {
+    position: relative;
+    width: 44px; height: 24px;
+  }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; inset: 0;
+    background: var(--gray-300);
+    border-radius: 24px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .slider:before {
+    content: '';
+    position: absolute;
+    width: 18px; height: 18px;
+    left: 3px; top: 3px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.2s;
+  }
+  .toggle input:checked + .slider { background: var(--navy); }
+  .toggle input:checked + .slider:before { transform: translateX(20px); }
+
+  /* Results */
+  .result-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--gray-100);
+  }
+  .result-row:last-child { border-bottom: none; }
+  .result-row .r-label { font-size: 0.875rem; font-weight: 500; color: var(--navy); }
+  .result-row .r-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--gray-700);
+    text-align: right;
+  }
+  .result-row.total .r-label { font-weight: 700; color: var(--navy); }
+  .result-row.total .r-value { font-weight: 700; color: var(--navy); }
+
+  /* Highlight box */
+  .highlight-box {
+    background: var(--gold-light);
+    border: 2px solid var(--gold);
+    border-radius: 10px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .highlight-box .h-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--navy);
+  }
+  .highlight-box .h-sub {
+    font-size: 0.75rem;
+    color: var(--gray-500);
+    margin-top: 2px;
+  }
+  .highlight-box .h-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--navy);
+  }
+
+  /* Cost pill */
+  .cost-box {
+    background: var(--navy);
+    border-radius: 10px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .cost-box .c-label { font-size: 0.8rem; font-weight: 600; color: rgba(255,255,255,0.7); }
+  .cost-box .c-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--gold);
+  }
+
+  /* Verify badge */
+  .verify {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: var(--green);
+    background: var(--green-bg);
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    padding: 8px 14px;
+    margin-top: 12px;
+  }
+  .verify svg { flex-shrink: 0; }
+
+  @media (max-width: 500px) {
+    .page-header { padding: 20px 16px; }
+    .tabs-wrapper { padding: 0 16px; }
+    .content { padding: 24px 12px 48px; }
+    .field, .toggle-row { grid-template-columns: 1fr 120px; }
+    .highlight-box .h-value { font-size: 1.2rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="logo">📋</div>
+  <div>
+    <h1>Simuladores de Cheques</h1>
+    <p>Descuento · Pago Diferido</p>
+  </div>
+</div>
+
+<div class="tabs-wrapper">
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('descuento', this)">Descuento de cheques</button>
+    <button class="tab-btn" onclick="switchTab('diferido', this)">Pago diferido</button>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- ====== TAB DESCUENTO ====== -->
+  <div class="sim-panel active" id="tab-descuento">
+
+    <div class="card">
+      <div class="card-header">Datos de entrada</div>
+      <div class="card-body">
+        <div class="field">
+          <label>Valor nominal del cheque ($)</label>
+          <input type="number" id="d-nominal" value="" placeholder="Ingresá el monto" oninput="calcDescuento()">
+        </div>
+        <div class="field">
+          <label>Días al vencimiento</label>
+          <input type="number" id="d-dias" value="" placeholder="Ej: 90" oninput="calcDescuento()">
+        </div>
+        <div class="field">
+          <label>TNA de descuento (%)</label>
+          <input type="number" id="d-tna" value="" placeholder="Ej: 32" step="0.01" oninput="calcDescuento()">
+        </div>
+        <div class="field">
+          <label>Gastos administrativos (% sobre nominal)</label>
+          <input type="number" id="d-gastos-pct" value="0.5" step="0.01" oninput="calcDescuento()">
+        </div>
+        <div class="field">
+          <label>Gastos administrativos fijos (% sobre nominal)</label>
+          <input type="number" id="d-gastos-fijos" value="1.2" step="0.01" oninput="calcDescuento()">
+        </div>
+        <div class="toggle-row">
+          <label>¿Aplica IVA 21% sobre gastos?</label>
+          <div class="toggle-wrap">
+            <span class="toggle-label" id="d-iva-label">Sí</span>
+            <label class="toggle">
+              <input type="checkbox" id="d-iva" checked onchange="calcDescuento()">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="highlight-box">
+      <div>
+        <div class="h-label">Neto a recibir</div>
+        <div class="h-sub">Después de todos los descuentos</div>
+      </div>
+      <div class="h-value" id="d-neto">—</div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Desglose del descuento</div>
+      <div class="card-body">
+        <div class="result-row">
+          <span class="r-label">Interés de descuento</span>
+          <span class="r-value" id="d-interes">—</span>
+        </div>
+        <div class="result-row">
+          <span class="r-label">Gastos administrativos (% + fijos)</span>
+          <span class="r-value" id="d-gastos-total">—</span>
+        </div>
+        <div class="result-row">
+          <span class="r-label">IVA sobre gastos</span>
+          <span class="r-value" id="d-iva-monto">—</span>
+        </div>
+        <div class="result-row total">
+          <span class="r-label">Total deducido</span>
+          <span class="r-value" id="d-total-desc">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="cost-box">
+      <div class="c-label">Costo efectivo TNA (sobre neto recibido)</div>
+      <div class="c-value" id="d-costo-tna">—</div>
+    </div>
+
+  </div>
+
+  <!-- ====== TAB DIFERIDO ====== -->
+  <div class="sim-panel" id="tab-diferido">
+
+    <div class="card">
+      <div class="card-header">Datos de entrada</div>
+      <div class="card-body">
+        <div class="field">
+          <label>Neto deseado en mano ($)</label>
+          <input type="number" id="f-neto" value="" placeholder="Ingresá el monto" oninput="calcDiferido()">
+        </div>
+        <div class="field">
+          <label>Días al vencimiento</label>
+          <input type="number" id="f-dias" value="" placeholder="Ej: 90" oninput="calcDiferido()">
+        </div>
+        <div class="field">
+          <label>TNA de descuento (%)</label>
+          <input type="number" id="f-tna" value="" placeholder="Ej: 32" step="0.01" oninput="calcDiferido()">
+        </div>
+        <div class="field">
+          <label>Gastos administrativos (% sobre nominal)</label>
+          <input type="number" id="f-gastos-pct" value="0.5" step="0.01" oninput="calcDiferido()">
+        </div>
+        <div class="field">
+          <label>Gastos administrativos fijos (% sobre nominal)</label>
+          <input type="number" id="f-gastos-fijos" value="1.2" step="0.01" oninput="calcDiferido()">
+        </div>
+        <div class="toggle-row">
+          <label>¿Aplica IVA 21% sobre gastos?</label>
+          <div class="toggle-wrap">
+            <span class="toggle-label" id="f-iva-label">Sí</span>
+            <label class="toggle">
+              <input type="checkbox" id="f-iva" checked onchange="calcDiferido()">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="highlight-box">
+      <div>
+        <div class="h-label">Valor nominal del cheque a emitir</div>
+        <div class="h-sub">Para que el receptor reciba el neto deseado</div>
+      </div>
+      <div class="h-value" id="f-nominal">—</div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Desglose del descuento</div>
+      <div class="card-body">
+        <div class="result-row">
+          <span class="r-label">Interés de descuento</span>
+          <span class="r-value" id="f-interes">—</span>
+        </div>
+        <div class="result-row">
+          <span class="r-label">Gastos administrativos (% + fijos)</span>
+          <span class="r-value" id="f-gastos-total">—</span>
+        </div>
+        <div class="result-row">
+          <span class="r-label">IVA sobre gastos</span>
+          <span class="r-value" id="f-iva-monto">—</span>
+        </div>
+        <div class="result-row total">
+          <span class="r-label">Total deducido</span>
+          <span class="r-value" id="f-total-desc">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="cost-box">
+      <div class="c-label">Costo efectivo TNA (sobre neto recibido)</div>
+      <div class="c-value" id="f-costo-tna">—</div>
+    </div>
+
+    <div class="verify" id="f-verify">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M13.5 4.5L6.5 11.5L3 8" stroke="#15803d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Verificación: el receptor recibe exactamente <strong id="f-verify-val" style="margin-left:4px">$10.000.000</strong>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  function fmt(n) {
+    if (isNaN(n) || !isFinite(n)) return '—';
+    return '$' + Math.round(n).toLocaleString('es-AR');
+  }
+  function fmtPct(n) {
+    if (isNaN(n) || !isFinite(n)) return '—';
+    return (n * 100).toFixed(2).replace('.', ',') + '%';
+  }
+
+  function switchTab(id, btn) {
+    document.querySelectorAll('.sim-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + id).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  // --- DESCUENTO ---
+  function calcDescuento() {
+    const nominal = parseFloat(document.getElementById('d-nominal').value);
+    const dias    = parseFloat(document.getElementById('d-dias').value);
+    const tna     = parseFloat(document.getElementById('d-tna').value) / 100;
+    const gPct    = parseFloat(document.getElementById('d-gastos-pct').value) / 100 || 0;
+    const gFijosPct = parseFloat(document.getElementById('d-gastos-fijos').value) / 100 || 0;
+    const iva     = document.getElementById('d-iva').checked ? 1 : 0;
+
+    document.getElementById('d-iva-label').textContent = iva ? 'Sí' : 'No';
+
+    if (!nominal || !dias || !tna) {
+      ['d-interes','d-gastos-total','d-iva-monto','d-total-desc','d-neto','d-costo-tna'].forEach(id => {
+        document.getElementById(id).textContent = '—';
+      });
+      return;
+    }
+
+    const interes    = nominal * (tna / 365) * dias;
+    const gastos     = nominal * gPct + nominal * gFijosPct;
+    const ivaMonto   = gastos * 0.21 * iva;
+    const totalDesc  = interes + gastos + ivaMonto;
+    const neto       = nominal - totalDesc;
+    const costoTNA   = (totalDesc / neto) * (365 / dias);
+
+    document.getElementById('d-interes').textContent      = fmt(interes);
+    document.getElementById('d-gastos-total').textContent = fmt(gastos);
+    document.getElementById('d-iva-monto').textContent    = fmt(ivaMonto);
+    document.getElementById('d-total-desc').textContent   = fmt(totalDesc);
+    document.getElementById('d-neto').textContent         = fmt(neto);
+    document.getElementById('d-costo-tna').textContent    = fmtPct(costoTNA);
+  }
+
+  // --- DIFERIDO ---
+  function calcDiferido() {
+    const neto    = parseFloat(document.getElementById('f-neto').value);
+    const dias    = parseFloat(document.getElementById('f-dias').value);
+    const tna     = parseFloat(document.getElementById('f-tna').value) / 100;
+    const gPct    = parseFloat(document.getElementById('f-gastos-pct').value) / 100 || 0;
+    const gFijosPct = parseFloat(document.getElementById('f-gastos-fijos').value) / 100 || 0;
+    const iva     = document.getElementById('f-iva').checked ? 1 : 0;
+
+    document.getElementById('f-iva-label').textContent = iva ? 'Sí' : 'No';
+
+    if (!neto || !dias || !tna) {
+      ['f-nominal','f-interes','f-gastos-total','f-iva-monto','f-total-desc','f-costo-tna','f-verify-val'].forEach(id => {
+        document.getElementById(id).textContent = '—';
+      });
+      return;
+    }
+
+    // Gastos fijos se calculan sobre el neto (igual que el Excel: =C5*1.2%)
+    const gFijosM   = neto * gFijosPct;
+    const ivaFactor = 1 + 0.21 * iva;
+    // Nominal = (Neto + gFijosM*(1+0.21*iva)) / (1 - tna/365*dias - gPct*(1+0.21*iva))
+    const denom     = 1 - (tna / 365) * dias - gPct * ivaFactor;
+    const nominal   = (neto + gFijosM * ivaFactor) / denom;
+
+    const interes   = nominal * (tna / 365) * dias;
+    const gastos    = nominal * gPct + gFijosM;
+    const ivaMonto  = gastos * 0.21 * iva;
+    const totalDesc = interes + gastos + ivaMonto;
+    const verificacion = nominal - totalDesc;
+    const costoTNA  = (totalDesc / neto) * (365 / dias);
+
+    document.getElementById('f-nominal').textContent      = fmt(nominal);
+    document.getElementById('f-interes').textContent      = fmt(interes);
+    document.getElementById('f-gastos-total').textContent = fmt(gastos);
+    document.getElementById('f-iva-monto').textContent    = fmt(ivaMonto);
+    document.getElementById('f-total-desc').textContent   = fmt(totalDesc);
+    document.getElementById('f-costo-tna').textContent    = fmtPct(costoTNA);
+    document.getElementById('f-verify-val').textContent   = fmt(verificacion);
+  }
+
+  // Init IVA labels
+  document.getElementById('d-iva-label').textContent = 'Sí';
+  document.getElementById('f-iva-label').textContent = 'Sí';
+</script>
+</body>
+</html>
